@@ -64,5 +64,79 @@ RFC 标准把状态码分成了五类，用数字的第一位表示分类:
 - **204 No Content**:是另一个很常见的成功状态码，它的含义**与“200 OK”基本相同，但响应头后没有 body 数据**
 - **206 Partial Content**：使用 **range 协议时返回部分响应内容时的响应码**，状态码 206 通常还会伴随着头字段“**Content-Range**”，表示响应报文里 body 数据的具体范围，供客户端确认，例如“Content-Range: bytes 0-99/2000”，意思是此次获取的是总计 2000 个字节的前 100 个字节。
 
+### 3.4 3xx
+
+- **301 Moved Permanently**：资源**永久性的重定**向到另一个 URI 中
+- **302 Found**：资源**临时的重定向**到另一个 URI 
+- **304 Not Modified**：当客户端拥有可能过期的缓存时，会携带缓存的标识 etag、时间等信息询问服务器缓存是否仍可复用，而304是告诉客户端可以**复用缓存**
+-  **307 Temporary Redirect**：**类似302**，但明确重定向后请求方法必须**与原请求方法相同**，不得改变
+- **308 Permanent Redirect**：**类似301**，但明确重定向后请求方法必须**与原请求方法相同**，不得改变
+
+### 3.5 4xx
+
+- **400 Bad Request**：服务器认为客户端出现了错误，但**不能明确判断为以下哪种错误**时使用此错误码。例如HTTP请求格式错误
+- **401 Unauthorized**：**用户认证信息缺失或者不正确**，导致服务器无法处理请求
+- **403 Forbidden**：服务器理解请求的含义，但**没有权限执行**此请求
+- **404 Not Found**：服务器没有找到对应的资源
+
+### 3.6 5xx
+- **500 Internal Server Error**：服务器**内部错误**，且不属于以下错误类型
+- **501 Not Implemented**：**服务器不支持实现请求所需要的功能** 
+- **502 Bad Gateway**：代理服务器**无法获取到合法响应**
+- **503 Service Unavailable**：服务器资源**尚未准备好处理当前请求**
+- **504 Gateway Timeout**：代理服务器无法及时的**从上游获得响应**
+
+
+
+## 4 HTTP连接流程
+
+
+
+![](http://base422.oss-cn-beijing.aliyuncs.com/httpduring.png)
+
+## 5 长连接与短连接
+
+### 5.1 短连接
+
+HTTP 协议最初（0.9/1.0）是个非常简单的协议，通信过程也采用了简单的“请求 - 应答”方式。
+
+**它底层的数据传输基于 TCP/IP，每次发送请求前需要先与服务器建立连接，收到响应报文后会立即关闭连接。**
+
+因为客户端与服务器的整个连接过程很短暂，不会与服务器保持长时间的连接状态，所以就被称为“短连接”（shortlived connections）。早期的 HTTP 协议也被称为是“无连接”的协议。
+
+![](http://base422.oss-cn-beijing.aliyuncs.com/nethttpshort.png)
+
+### 5.2 长连接
+
+针对短连接暴露出的缺点，HTTP 协议就提出了“长连接”的通信方式，也叫“持久连接”（persistent connections）、“连接保活”（keep alive）、“连接复用”（connection reuse）。
+其实解决办法也很简单，用的就是“成本均摊”的思路，**既然 TCP 的连接和关闭非常耗时间，那么就把这个时间成本由原来的一个“请求 - 应答”均摊到多个“请求 - 应答”上**。
+这样虽然不能改善 TCP 的连接效率，但基于“分母效应”，每个“请求 - 应答”的无效时间就会降低不少，整体传输效率也就提高了。
+这里我画了一个短连接与长连接的对比示意图
+
+![](http://base422.oss-cn-beijing.aliyuncs.com/nethttplong.png)
+
+### 5.3 连接相关的头字段
+
+- **Keep-Alive**：长连接
+  - 客户端请求长连接 
+    	- Connection: Keep-Alive
+  - 服务器表示支持长连接
+  	- Connection: Keep-Alive
+  -  客户端复用连接
+  -  HTTP/1.1 默认支持长连接 
+- **Close**：短连接
+- 对代理服务器的要求
+  - 不转发 Connection 列出头部，该头部仅与当前连接相关
+
+
+
+### 5.4 Connection作用范围
+
+**Connection 仅针对当前连接有效!**
+
+![](http://base422.oss-cn-beijing.aliyuncs.com/netkeepalive.png)
+
+
+
 
 
