@@ -215,3 +215,114 @@ HTTP 协议最初（0.9/1.0）是个非常简单的协议，通信过程也采�
   - Range: bytes=0-50, 100-150
 - 响应:
   - Content-Type：multipart/byteranges; boundary=…
+
+
+
+## 7 Cookie
+
+### 7.1 什么是Cookie
+
+保存在客户端、由浏览器维护、表示应用状态的 HTTP 头部
+
+- 存放在内存或者磁盘中
+- 服务器端生成 Cookie 在响应中通过 Set-Cookie 头部告知客户端（允许多 个 Set-Cookie 头部传递多个值）
+- 客户端得到 Cookie 后，后续请求都会 自动将 Cookie 头部携带至请求中
+
+### 7.2 Cookie属性
+
+- **expires-av = "Expires=" sane-cookie-date** 
+  - cookie 到日期 sane-cookie-date 后失效
+- **max-age-av = "Max-Age=" x**
+  - cookie 经过x 秒后失效。max-age 优先级高于 expires
+- **domain-av = "Domain=" domain-value**
+  - 指定 cookie 可用于哪些域名，默认可以访问当前域名
+- **path-av = "Path=" path-value** 
+  - 指定 Path 路径下才能使用 cookie
+- **secure-av = "Secure“** 
+  - 只有使用 TLS/SSL 协议（https）时才能使用 cookie
+- **httponly-av = "HttpOnly“** 
+  - 不能使用 JavaScript（Document.cookie 、XMLHttpRequest 、Request APIs）访问到 cookie
+
+### 7.3 Cookie 在协议设计上的问题
+
+- Cookie 会被附加在每个 HTTP 请求中，所以**无形中增加了流量**
+- 由于在 HTTP 请求中的 Cookie 是明文传递的，**所以安全性成问题**（除非用 HTTPS）
+- Cookie 的大小不应超过 4KB，故对于复杂的存储需求来说是不够用的
+
+### 7.4 Cookie的应用
+
+- **身份识别**
+- **广告追踪**
+
+
+
+## 8 同源策略
+
+### 8.1 定义
+
+**所有的浏览器都遵守同源策略,服务器不管你是不是同源都返回数据！**，这个策略能够保证一个源的动态脚本不能读取或操作其他源的http响应和cookie，这就使浏览器隔离了来自不同源的内容，防止它们互相操作。所谓同源是指`协议、域名和端口`都一致的情况。
+
+简单的来说，出于安全方面的考虑，页面中的JavaScript无法访问其他服务器上的数据，即“同源策略”。而跨域就是通过某些手段来绕过同源策略限制，实现不同服务器之间通信的效果。
+
+### 8.2 举例
+
+举例说明：
+
+![](http://base422.oss-cn-beijing.aliyuncs.com/netcrof.png)
+
+### 8.3 解决方案－CORS
+
+如果站点 A 允许站点 B 的脚本访问其资源，必须在 HTTP 响应中显式的告知浏览器：站点 B 是被允许的 :
+
+- 访问站点 A 的请求，浏览器应告知该请求来自站点 B
+
+- 站点 A 的响应中，应明确哪些跨域请求是被允许的
+
+
+
+#### 8.3.1 简单请求 
+
+何为简单请求？ 
+
+- GET/HEAD/POST 方法之一
+- 仅能使用 CORS 安全的头部：Accept、Accept-Language、Content-Language、Content-Type 
+- Content-Type 值只能是： text/plain、multipart/form-data、application/x-www-form-urlencoded 三者其中之一 
+
+处理方式:
+
+- 请求中携带 Origin 头部告知来自哪个域
+- 响应中携带 Access-Control-Allow-Origin 头部表示允许哪些域
+- 浏览器放行
+
+![](http://base422.oss-cn-beijing.aliyuncs.com/netsimplerequest.png)
+
+
+
+#### 8.3.2 预检请求
+
+简单请求以外的其他请求,访问资源前需要先发起 prefilght 预检请求（方法为 OPTIONS）询问何种请求是被允许的:
+
+- 预检请求头部
+  - Access-Control-Request-Method
+  - Access-Control-Request-Headers
+- 预检请求响应 
+  - Access-Control-Allow-Methods
+  - Access-Control-Allow-Headers
+  - Access-Control-Max-Age
+
+![](http://base422.oss-cn-beijing.aliyuncs.com/netprerequest.png)
+
+### 8.4 响应头部
+
+- **Access-Control-Allow-Methods**
+  - 在 preflight 预检请求的响应中，告知客户端后续请求允许使用的方法
+- **Access-Control-Allow-Headers**
+  - 在 preflight 预检请求的响应中，告知客户端后续请求允许携带的头部
+- **Access-Control-Max-Age**
+  - 在 preflight 预检请求的响应中，告知客户端该响应的信息可以缓存多久
+- **Access-Control-Expose-Headers**
+  - 告知浏览器哪些响应头部可以供客户端使用，默认情况下只有 Cache-Control、Content-Language、 Content-Type、Expires、Last-Modified、Pragma 可供使用 
+- **Access-Control-Allow-Origin**
+  - 告知浏览器允许哪些域访问当前资源，```*```表示允许所有域。为避免缓存错乱，响应中需要携带 Vary: Origin 
+- **Access-Control-Allow-Credentials**
+  - 告知浏览器是否可以将 Credentials 暴露给客户端使用，Credentials 包含 cookie、authorization 类头部、 TLS证书等。
